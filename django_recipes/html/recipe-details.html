@@ -1,0 +1,16 @@
+<body>
+  {% for recipe in data %}
+  <h1>Recipe #{{ recipe.id }}</h1>
+  <hr />
+  <ul>
+    <li>Title: {{ recipe.title }}</li>
+    <li>
+      Author: <a href="/author/{{recipe.author.id}}">{{ recipe.author }}</a>
+    </li>
+    <li>Description: {{ recipe.description }}</li>
+    <li>Time Required: {{ recipe.time_required }}</li>
+    <li>Instrcutions: {{ recipe.instructions }}</li>
+  </ul>
+  <hr />
+  {% endfor %}
+</body>

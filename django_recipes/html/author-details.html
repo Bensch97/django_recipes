@@ -1,0 +1,16 @@
+<body>
+  <h1>Name: {{ data.author.name }}</h1>
+  <ul>
+    <li>Bio: {{ data.author.bio }}</li>
+  </ul>
+  <h2>Posts:</h2>
+  {% for dict_item in data.recipes %}
+  <hr />
+  <ul>
+    <li>
+      Title: <a href="/recipes/{{dict_item.id}}">{{ dict_item.title }}</a>
+    </li>
+  </ul>
+  {% endfor %}
+  <hr />
+</body>
