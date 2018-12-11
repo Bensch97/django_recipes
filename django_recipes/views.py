@@ -1,8 +1,12 @@
-from django.http import HttpResponse
-from django.shortcuts import render
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, reverse
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 
 from .models import Recipe, Author
-from .forms import AuthorForm, RecipeForm
+from .forms import AuthorForm, RecipeForm, LoginForm, SignupForm
 
 
 def current_recipes(request):
@@ -26,9 +30,10 @@ def author_details(request, author_id):
     return render(request, 'author-details.html', {'data': data})
 
 
+@login_required()
 def recipe_add(request):
     if request.method == 'POST':
-        form = RecipeForm(request.POST)
+        form = RecipeForm(request.user, request.POST)
         if form.is_valid():
             data = form.cleaned_data
             Recipe.objects.create(
@@ -40,21 +45,59 @@ def recipe_add(request):
             )
             return render(request, 'thanks.html')
     else:
-        form = RecipeForm()
+        form = RecipeForm(user=request.user)
     return render(request, 'recipe-form.html', {'form': form})
 
 
+@staff_member_required()
 def author_add(request):
+    form = AuthorForm(None or request.POST)
+    if form.is_valid():
+        data = form.cleaned_data
+        Author.objects.create(
+            name=data['name'],
+            bio=data['bio'],
+        )
+        return render(request, 'thanks.html')
+    return render(request, 'author-form.html', {'form': form})
+
+
+def signup_user(request):
+    form = SignupForm(None or request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        user = User.objects.create_user(
+            data['username'],
+            data['email'],
+            data['password']
+        )
+        login(request, user)
+        return HttpResponseRedirect(reverse('homepage'))
+    return render(request, 'signup.html', {'form': form})
+
+
+def login_user(request):
+    next_page = request.GET.get('next')
     if request.method == 'POST':
-        form = AuthorForm(request.POST)
+        form = LoginForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            Author.objects.create(
-                name=data['name'],
-                bio=data['bio'],
+            user = authenticate(
+                username=data['username'],
+                password=data['password']
             )
-            return render(request, 'thanks.html')
+            if user is not None:
+                login(request, user)
+                if next_page:
+                    return HttpResponseRedirect(next_page)
+                else:
+                    return HttpResponseRedirect(reverse('homepage'))
     else:
-        form = AuthorForm()
+        form = LoginForm()
+        return render(request, 'login.html', {'form': form, 'next': next_page})
 
-    return render(request, 'author-form.html', {'form': form})
+
+def logout_user(request):
+    logout(request)
+    return HttpResponseRedirect(reverse('homepage'))
